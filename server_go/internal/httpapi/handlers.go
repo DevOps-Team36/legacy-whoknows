@@ -12,9 +12,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"whoknows_variations/server_go/internal/auth"
 	"whoknows_variations/server_go/internal/db"
+	"whoknows_variations/server_go/internal/metrics"
+	"whoknows_variations/server_go/internal/searchlog"
 )
 
 type contextKey string
@@ -268,14 +271,16 @@ func (s *Server) ServeRootPage(w http.ResponseWriter, r *http.Request) {
 
 	var results []map[string]any
 	if q != "" {
+		started := time.Now()
 		var err error
 		results, err = db.SearchPages(r.Context(), s.DB, q, lang)
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		if len(results) == 0 {
-			s.queueMissedSearch(q, lang)
+		metrics.ObserveSearch(time.Since(started), len(results))
+		if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
+			log.Printf("search log write failed: %v", err)
 		}
 	}
 
@@ -349,6 +354,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		lang = &langParam
 	}
 
+	started := time.Now()
 	results, err := db.SearchPages(r.Context(), s.DB, q, lang)
 	if err != nil {
 		log.Printf("search query failed: %v", err)
@@ -356,29 +362,68 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(results) == 0 {
-		s.queueMissedSearch(q, lang)
+	metrics.ObserveSearch(time.Since(started), len(results))
+	if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
+		log.Printf("search log write failed: %v", err)
 	}
 
 	writeJSON(w, http.StatusOK, SearchResponse{Data: results})
 }
 
-// queueMissedSearch sends the search query to the Azure Storage Queue asynchronously
-// so the web scraper can index the missing content. No-op if queue is not configured.
-func (s *Server) queueMissedSearch(q string, lang *string) {
-	if s.Queue == nil {
+// TriggerScrape godoc
+// @Summary Trigger Scrape
+// @Description Manually enqueue a scrape job for a specific query. Use this after reviewing
+// @Description zero-result searches in Grafana to index missing content.
+// @Tags scrape
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer <api-key>"
+// @Param body body object true "Query to scrape: {query, language}"
+// @Success 202 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 503 {object} map[string]string
+// @Router /api/scrape [post]
+func (s *Server) TriggerScrape(w http.ResponseWriter, r *http.Request) {
+	expected := []byte("Bearer " + s.ScrapeKey)
+	actual := []byte(r.Header.Get("Authorization"))
+	if s.ScrapeKey == "" || subtle.ConstantTimeCompare(actual, expected) != 1 {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
 	}
-	langStr := "en"
-	if lang != nil {
-		langStr = *lang
+
+	var body struct {
+		Query    string `json:"query"`
+		Language string `json:"language"`
 	}
-	go func() {
-		if err := s.Queue.Send(map[string]string{"query": q, "language": langStr}); err != nil {
-			sanitized := strings.NewReplacer("\r", "", "\n", "").Replace(q)
-			log.Printf("failed to queue missed search %q: %v", sanitized, err) // #nosec G706 -- query is newline-sanitized before logging
-		}
-	}()
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		return
+	}
+	if body.Query == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "query is required"})
+		return
+	}
+	if body.Language == "" {
+		body.Language = "en"
+	}
+	if body.Language != "en" && body.Language != "da" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "language must be 'en' or 'da'"})
+		return
+	}
+
+	if s.Queue == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "queue not configured"})
+		return
+	}
+
+	if err := s.Queue.Send(map[string]string{"query": body.Query, "language": body.Language}); err != nil {
+		log.Printf("failed to queue scrape request: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to queue scrape request"})
+		return
+	}
+
+	writeJSON(w, http.StatusAccepted, map[string]string{"message": "scrape queued"})
 }
 
 // AddPage godoc

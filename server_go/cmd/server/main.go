@@ -61,11 +61,17 @@ func main() {
 		log.Printf("WHOKNOWS_SCRAPER_API_KEY not set — POST /api/pages will return 401")
 	}
 
+	scrapeKey := os.Getenv("WHOKNOWS_SCRAPE_TRIGGER_KEY")
+	if scrapeKey == "" {
+		log.Printf("WHOKNOWS_SCRAPE_TRIGGER_KEY not set — POST /api/scrape will return 401")
+	}
+
 	s := &httpapi.Server{
 		DB:         pool,
 		Sessions:   store,
 		Queue:      queueClient,
 		ScraperKey: scraperKey,
+		ScrapeKey:  scrapeKey,
 	}
 	router := httpapi.NewRouter(s)
 
