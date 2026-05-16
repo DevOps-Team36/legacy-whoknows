@@ -273,6 +273,7 @@ func (s *Server) ServeRootPage(w http.ResponseWriter, r *http.Request) {
 	if q != "" {
 		started := time.Now()
 		var err error
+		started := time.Now()
 		results, err = db.SearchPages(r.Context(), s.DB, q, lang)
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -360,6 +361,10 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		log.Printf("search query failed: %v", err)
 		writeJSON(w, http.StatusOK, SearchResponse{Data: []map[string]any{}})
 		return
+	}
+	metrics.ObserveSearch(time.Since(started), len(results))
+	if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
+		log.Printf("search log write failed: %v", err)
 	}
 
 	metrics.ObserveSearch(time.Since(started), len(results))
