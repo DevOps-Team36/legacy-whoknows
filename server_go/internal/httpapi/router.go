@@ -12,13 +12,17 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"whoknows_variations/server_go/internal/metrics"
+	"whoknows_variations/server_go/internal/queue"
 )
 
 const SessionName = "session"
 
 type Server struct {
-	DB       *pgxpool.Pool
-	Sessions *sessions.CookieStore
+	DB         *pgxpool.Pool
+	Sessions   *sessions.CookieStore
+	Queue      *queue.Client
+	ScraperKey string // POST /api/pages — used by Azure Function scraper
+	ScrapeKey  string // POST /api/scrape — used by admins to trigger jobs
 }
 
 func NewRouter(s *Server) http.Handler {
@@ -41,6 +45,8 @@ func NewRouter(s *Server) http.Handler {
 	r.Post("/api/register", s.Register)
 	r.Post("/api/login", s.Login)
 	r.Get("/api/logout", s.Logout)
+	r.Post("/api/pages", s.AddPage)
+	r.Post("/api/scrape", s.TriggerScrape)
 
 	// Swagger UI
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
