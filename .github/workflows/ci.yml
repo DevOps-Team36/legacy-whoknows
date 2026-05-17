@@ -36,7 +36,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.25.9'
+          go-version: '1.26.3'
           cache-dependency-path: server_go/go.sum
 
       - name: Build
@@ -72,7 +72,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.25.9'
+          go-version: '1.26.3'
           cache-dependency-path: server_go/go.sum
 
       - name: Install goose
@@ -91,13 +91,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.25.9'
+          go-version: '1.26.3'
           cache-dependency-path: server_go/go.sum
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47
         with:
-          version: v2.6.2
+          version: latest
           working-directory: server_go
 
   gosec:
@@ -109,7 +109,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.25.9'
+          go-version: '1.26.3'
           cache-dependency-path: server_go/go.sum
 
       - name: Install gosec
@@ -129,7 +129,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491
         with:
-          go-version: '1.25.9'
+          go-version: '1.26.3'
           cache-dependency-path: server_go/go.sum
 
       - name: Install govulncheck
