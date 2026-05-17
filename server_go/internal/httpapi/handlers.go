@@ -273,7 +273,6 @@ func (s *Server) ServeRootPage(w http.ResponseWriter, r *http.Request) {
 	if q != "" {
 		started := time.Now()
 		var err error
-		started := time.Now()
 		results, err = db.SearchPages(r.Context(), s.DB, q, lang)
 		if err != nil {
 			http.Error(w, "internal error", http.StatusInternalServerError)

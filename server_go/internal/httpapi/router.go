@@ -12,6 +12,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"whoknows_variations/server_go/internal/metrics"
+	"whoknows_variations/server_go/internal/queue"
 )
 
 const SessionName = "session"
