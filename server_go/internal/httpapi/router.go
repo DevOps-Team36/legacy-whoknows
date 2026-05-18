@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -18,11 +19,16 @@ import (
 const SessionName = "session"
 
 type Server struct {
-	DB         *pgxpool.Pool
-	Sessions   *sessions.CookieStore
-	Queue      *queue.Client
-	ScraperKey string // POST /api/pages — used by Azure Function scraper
-	ScrapeKey  string // POST /api/scrape — used by admins to trigger jobs
+	DB             *pgxpool.Pool
+	Sessions       *sessions.CookieStore
+	Queue          *queue.Client
+	ScraperKey     string // POST /api/pages — used by Azure Function scraper
+	ScrapeKey      string // POST /api/scrape — used by admins to trigger jobs
+	WeatherService WeatherProvider
+}
+
+type WeatherProvider interface {
+	Forecast(ctx context.Context, city string) (map[string]any, error)
 }
 
 func NewRouter(s *Server) http.Handler {
@@ -37,11 +43,13 @@ func NewRouter(s *Server) http.Handler {
 	// HTML routes
 	r.Get("/", s.ServeRootPage)
 	r.Get("/about", s.ServeAboutPage)
+	r.Get("/weather", s.ServeWeatherPage)
 	r.Get("/register", s.ServeRegisterPage)
 	r.Get("/login", s.ServeLoginPage)
 
 	// API routes
 	r.Get("/api/search", s.Search)
+	r.Get("/api/weather", s.Weather)
 	r.Post("/api/register", s.Register)
 	r.Post("/api/login", s.Login)
 	r.Get("/api/logout", s.Logout)
