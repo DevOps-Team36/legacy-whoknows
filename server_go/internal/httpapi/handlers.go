@@ -33,6 +33,10 @@ type SearchResponse struct {
 	Data []map[string]any `json:"data"`
 }
 
+type StandardResponse struct {
+	Data map[string]any `json:"data"`
+}
+
 type RequestValidationError struct {
 	StatusCode int     `json:"statusCode"`
 	Message    *string `json:"message"`
@@ -61,6 +65,7 @@ type ViewData struct {
 	Error   string
 	Results []map[string]any
 	Query   string
+	Weather map[string]any
 }
 
 // UserFromSession is chi middleware that loads the logged-in user (if any)
@@ -329,6 +334,24 @@ func (s *Server) ServeAboutPage(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "about.html", ViewData{User: currentUser(r), Flashes: s.getFlashes(w, r)})
 }
 
+// ServeWeatherPage godoc
+// @Summary Serve Weather Page
+// @Description Serves the weather forecast page as HTML.
+// @Tags pages
+// @Produce html
+// @Param city query string false "City name"
+// @Success 200 {string} string "HTML page"
+// @Router /weather [get]
+func (s *Server) ServeWeatherPage(w http.ResponseWriter, r *http.Request) {
+	city := strings.TrimSpace(r.URL.Query().Get("city"))
+	renderTemplate(w, "weather.html", ViewData{
+		User:    currentUser(r),
+		Flashes: s.getFlashes(w, r),
+		Query:   city,
+		Weather: s.weatherForecast(r, city),
+	})
+}
+
 // ServeRegisterPage godoc
 // @Summary Serve Register Page
 // @Description Serves the registration page as HTML.
@@ -404,11 +427,6 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, SearchResponse{Data: []map[string]any{}})
 		return
 	}
-	metrics.ObserveSearch(time.Since(started), len(results))
-	if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
-		log.Printf("search log write failed: %v", err)
-	}
-
 	metrics.ObserveSearch(time.Since(started), len(results))
 	if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
 		log.Printf("search log write failed: %v", err)
@@ -525,6 +543,70 @@ func (s *Server) AddPage(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("indexed page: %s", page.Title)
 	writeJSON(w, http.StatusCreated, map[string]string{"message": "page indexed"})
+}
+
+// Weather godoc
+// @Summary Weather
+// @Description Returns the current weather forecast.
+// @Tags weather
+// @Produce json
+// @Param city query string false "City name"
+// @Success 200 {object} StandardResponse
+// @Router /api/weather [get]
+func (s *Server) Weather(w http.ResponseWriter, r *http.Request) {
+	city := strings.TrimSpace(r.URL.Query().Get("city"))
+	writeJSON(w, http.StatusOK, StandardResponse{Data: s.weatherForecast(r, city)})
+}
+
+func (s *Server) weatherForecast(r *http.Request, city string) map[string]any {
+	if s.WeatherService == nil {
+		return fallbackWeatherForecast(city)
+	}
+
+	forecast, err := s.WeatherService.Forecast(r.Context(), city)
+	if err != nil {
+		log.Printf("weather forecast failed: %v", err)
+		return fallbackWeatherForecast(city)
+	}
+	return forecast
+}
+
+func fallbackWeatherForecast(city string) map[string]any {
+	location := city
+	if location == "" {
+		location = "Copenhagen"
+	}
+	return map[string]any{
+		"location":        location,
+		"summary":         "Forecast temporarily unavailable.",
+		"icon":            "partly_cloudy_day",
+		"source":          "placeholder",
+		"temperature":     12,
+		"temperatureUnit": "celsius",
+		"forecast": []map[string]any{
+			{
+				"day":         "Today",
+				"condition":   "Cloudy",
+				"icon":        "cloud",
+				"temperature": 12,
+				"unit":        "celsius",
+			},
+			{
+				"day":         "Tomorrow",
+				"condition":   "Light rain",
+				"icon":        "rainy_light",
+				"temperature": 10,
+				"unit":        "celsius",
+			},
+			{
+				"day":         "Day 3",
+				"condition":   "Partly sunny",
+				"icon":        "partly_cloudy_day",
+				"temperature": 13,
+				"unit":        "celsius",
+			},
+		},
+	}
 }
 
 // Register godoc

@@ -27,6 +27,18 @@
             "get": {
                 "summary": "Serve Weather Page",
                 "operationId": "serve_weather_page_weather_get",
+                "parameters": [
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "title": "City"
+                        },
+                        "description": "City name"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
@@ -138,6 +150,18 @@
             "get": {
                 "summary": "Weather",
                 "operationId": "weather_api_weather_get",
+                "parameters": [
+                    {
+                        "name": "city",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "title": "City"
+                        },
+                        "description": "City name"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",

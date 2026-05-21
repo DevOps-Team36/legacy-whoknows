@@ -17,6 +17,7 @@ import (
 	"whoknows_variations/server_go/internal/db"
 	"whoknows_variations/server_go/internal/httpapi"
 	"whoknows_variations/server_go/internal/queue"
+	"whoknows_variations/server_go/internal/weather"
 )
 
 // @title WhoKnows API
@@ -67,11 +68,12 @@ func main() {
 	}
 
 	s := &httpapi.Server{
-		DB:         pool,
-		Sessions:   store,
-		Queue:      queueClient,
-		ScraperKey: scraperKey,
-		ScrapeKey:  scrapeKey,
+		DB:             pool,
+		Sessions:       store,
+		Queue:          queueClient,
+		ScraperKey:     scraperKey,
+		ScrapeKey:      scrapeKey,
+		WeatherService: weather.NewService(),
 	}
 	router := httpapi.NewRouter(s)
 
