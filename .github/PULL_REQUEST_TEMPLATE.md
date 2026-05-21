@@ -1,7 +1,5 @@
 ## Description
 
-### Changes Made
-<!-- A clear and concise summary of the changes introduced in this PR -->
 
 
 ### Why Was It Necessary
