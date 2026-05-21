@@ -61,6 +61,39 @@ func TestGetUserByID(t *testing.T) {
 	}
 }
 
+func TestUpdateUserPassword_ClearsPasswordChangeRequired(t *testing.T) {
+	ctx := context.Background()
+	pool := newTestPool(t)
+
+	if err := CreateUser(ctx, pool, "resetuser", "reset@example.com", "oldhash"); err != nil {
+		t.Fatal(err)
+	}
+
+	u, err := GetUserByUsername(ctx, pool, "resetuser")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := pool.Exec(ctx, "UPDATE users SET password_change_required = true WHERE id = $1", u.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := UpdateUserPassword(ctx, pool, u.ID, "newhash"); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := GetUserByID(ctx, pool, u.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if updated.PasswordHash != "newhash" {
+		t.Errorf("expected updated password hash, got %q", updated.PasswordHash)
+	}
+	if updated.PasswordChangeRequired {
+		t.Error("expected password change requirement to be cleared")
+	}
+}
+
 func TestGetUserByID_NotFound(t *testing.T) {
 	ctx := context.Background()
 	pool := newTestPool(t)

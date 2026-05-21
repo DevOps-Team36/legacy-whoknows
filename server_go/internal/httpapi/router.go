@@ -29,6 +29,7 @@ func NewRouter(s *Server) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(s.UserFromSession)
+	r.Use(s.RequirePasswordChange)
 	r.Use(observeHTTPMetrics)
 
 	r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
@@ -39,11 +40,13 @@ func NewRouter(s *Server) http.Handler {
 	r.Get("/about", s.ServeAboutPage)
 	r.Get("/register", s.ServeRegisterPage)
 	r.Get("/login", s.ServeLoginPage)
+	r.Get("/change-password", s.ServeChangePasswordPage)
 
 	// API routes
 	r.Get("/api/search", s.Search)
 	r.Post("/api/register", s.Register)
 	r.Post("/api/login", s.Login)
+	r.Post("/api/change-password", s.ChangePassword)
 	r.Get("/api/logout", s.Logout)
 	r.Post("/api/pages", s.AddPage)
 	r.Post("/api/scrape", s.TriggerScrape)

@@ -49,9 +49,10 @@ type HTTPValidationError struct {
 }
 
 type User struct {
-	ID       int64
-	Username string
-	Email    string
+	ID                     int64
+	Username               string
+	Email                  string
+	PasswordChangeRequired bool
 }
 
 type ViewData struct {
@@ -85,9 +86,37 @@ func (s *Server) UserFromSession(next http.Handler) http.Handler {
 			return
 		}
 
-		u := &User{ID: row.ID, Username: row.Username, Email: row.Email}
+		u := &User{
+			ID:                     row.ID,
+			Username:               row.Username,
+			Email:                  row.Email,
+			PasswordChangeRequired: row.PasswordChangeRequired,
+		}
 		ctx := context.WithValue(r.Context(), userContextKey, u)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *Server) RequirePasswordChange(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := currentUser(r)
+		if user == nil || !user.PasswordChangeRequired {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		switch r.URL.Path {
+		case "/change-password", "/api/change-password", "/api/logout":
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if strings.HasPrefix(r.URL.Path, "/static/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.Redirect(w, r, "/change-password", http.StatusSeeOther)
 	})
 }
 
@@ -328,6 +357,20 @@ func (s *Server) ServeLoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	renderTemplate(w, "login.html", ViewData{Flashes: s.getFlashes(w, r)})
+}
+
+func (s *Server) ServeChangePasswordPage(w http.ResponseWriter, r *http.Request) {
+	user := currentUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !user.PasswordChangeRequired {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	renderTemplate(w, "change_password.html", ViewData{User: user, Flashes: s.getFlashes(w, r)})
 }
 
 // Search godoc
@@ -592,7 +635,62 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	sess.Values["user_id"] = user.ID
 	_ = sess.Save(r, w)
 
+	if user.PasswordChangeRequired {
+		http.Redirect(w, r, "/change-password", http.StatusSeeOther)
+		return
+	}
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	if !requireFormFields(w, r, "current_password", "password", "password2") {
+		return
+	}
+
+	user := currentUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	row, err := db.GetUserByID(r.Context(), s.DB, user.ID)
+	if err != nil {
+		log.Printf("change password user lookup failed: %v", err)
+		s.flashAndRedirect(w, r, "Internal error, please try again", "/change-password")
+		return
+	}
+
+	currentPassword := r.FormValue("current_password")
+	password := r.FormValue("password")
+	password2 := r.FormValue("password2")
+
+	var formError string
+	switch {
+	case currentPassword == "":
+		formError = "You have to enter your current password"
+	case !auth.VerifyPassword(row.PasswordHash, currentPassword):
+		formError = "Current password is incorrect"
+	case password == "":
+		formError = "You have to enter a new password"
+	case password != password2:
+		formError = "The two passwords do not match"
+	case auth.VerifyPassword(row.PasswordHash, password):
+		formError = "New password must be different from your current password"
+	}
+
+	if formError != "" {
+		s.flashAndRedirect(w, r, formError, "/change-password")
+		return
+	}
+
+	if err := db.UpdateUserPassword(r.Context(), s.DB, user.ID, auth.HashPassword(password)); err != nil {
+		log.Printf("change password update failed: %v", err)
+		s.flashAndRedirect(w, r, "Internal error, please try again", "/change-password")
+		return
+	}
+
+	s.flashAndRedirect(w, r, "Password updated successfully", "/")
 }
 
 // Logout godoc
