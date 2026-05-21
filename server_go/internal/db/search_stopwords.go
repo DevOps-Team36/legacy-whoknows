@@ -22,6 +22,7 @@ var searchStopWords = map[string]struct{}{
 	"being":      {},
 	"below":      {},
 	"between":    {},
+	"best":       {},
 	"both":       {},
 	"but":        {},
 	"by":         {},
