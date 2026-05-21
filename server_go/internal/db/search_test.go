@@ -122,3 +122,71 @@ func TestSearchPages_PartialMatch(t *testing.T) {
 		t.Fatalf("expected 2 results for partial match, got %d", len(results))
 	}
 }
+
+func TestSearchPages_MatchesContentKeywords(t *testing.T) {
+	ctx := context.Background()
+	pool := newTestPool(t)
+	seedPages(t, pool)
+
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO pages (title, url, language, content) VALUES ($1, $2, $3, $4)`,
+		"IoT Overview", "/iot", "en", "Choosing a programming language for IoT devices depends on constraints.",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := SearchPages(ctx, pool, "What is the best programming language for IoT?", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasSearchResultURL(results, "/iot") {
+		t.Fatalf("expected content keyword match for /iot, got %#v", results)
+	}
+}
+
+func TestSearchPages_DeduplicatesTitleAndContentMatches(t *testing.T) {
+	ctx := context.Background()
+	pool := newTestPool(t)
+	seedPages(t, pool)
+
+	results, err := SearchPages(ctx, pool, "Go", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected title/content duplicate to appear once, got %d", len(results))
+	}
+	if results[0]["url"] != "/go" {
+		t.Fatalf("expected /go result, got %q", results[0]["url"])
+	}
+}
+
+func TestSearchPages_ContentSearchMatchesWholeWordsOnly(t *testing.T) {
+	ctx := context.Background()
+	pool := newTestPool(t)
+	seedPages(t, pool)
+
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO pages (title, url, language, content) VALUES ($1, $2, $3, $4)`,
+		"C++", "/cpp", "en", "Nicolai wrote this article.",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := SearchPages(ctx, pool, "cola", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasSearchResultURL(results, "/cpp") {
+		t.Fatalf("expected cola not to match nicolai content, got %#v", results)
+	}
+}
+
+func hasSearchResultURL(results []map[string]any, url string) bool {
+	for _, result := range results {
+		if result["url"] == url {
+			return true
+		}
+	}
+	return false
+}
