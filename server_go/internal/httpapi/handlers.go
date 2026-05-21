@@ -442,7 +442,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 // @Tags scrape
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer <api-key>"
+// @Param X-Scrape-Key header string true "API key"
 // @Param body body object true "Query to scrape: {query, language}"
 // @Success 202 {object} map[string]string
 // @Failure 400 {object} map[string]string
@@ -450,8 +450,8 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 // @Failure 503 {object} map[string]string
 // @Router /api/scrape [post]
 func (s *Server) TriggerScrape(w http.ResponseWriter, r *http.Request) {
-	expected := []byte("Bearer " + s.ScrapeKey)
-	actual := []byte(r.Header.Get("Authorization"))
+	expected := []byte(s.ScrapeKey)
+	actual := []byte(r.Header.Get("X-Scrape-Key"))
 	if s.ScrapeKey == "" || subtle.ConstantTimeCompare(actual, expected) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
@@ -497,15 +497,15 @@ func (s *Server) TriggerScrape(w http.ResponseWriter, r *http.Request) {
 // @Tags pages
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer <api-key>"
+// @Param X-Scraper-Key header string true "API key"
 // @Param page body object true "Page data"
 // @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Router /api/pages [post]
 func (s *Server) AddPage(w http.ResponseWriter, r *http.Request) {
-	expected := []byte("Bearer " + s.ScraperKey)
-	actual := []byte(r.Header.Get("Authorization"))
+	expected := []byte(s.ScraperKey)
+	actual := []byte(r.Header.Get("X-Scraper-Key"))
 	if s.ScraperKey == "" || subtle.ConstantTimeCompare(actual, expected) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
