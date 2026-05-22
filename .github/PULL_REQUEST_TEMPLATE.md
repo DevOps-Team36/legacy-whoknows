@@ -1,10 +1,4 @@
-# Description
-
-### Changes Made
-
-<!-- A clear and concise summary of the changes introduced in this PR -->
-
-### Why Was It Necessary
+# Why Was It Necessary
 
 <!-- Explain the motivation or problem this PR addresses. Link to relevant context if applicable -->
 
