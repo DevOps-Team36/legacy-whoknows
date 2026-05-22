@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"log"
@@ -28,8 +27,6 @@ import (
 // @BasePath /
 func main() {
 	ctx := context.Background()
-
-	loadDotEnvFiles(".env", "server_go/.env")
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
@@ -128,52 +125,4 @@ func runMigrations(dsn string) error {
 func sanitizeLogValue(value string) string {
 	value = strings.ReplaceAll(value, "\r", "")
 	return strings.ReplaceAll(value, "\n", "")
-}
-
-func loadDotEnvFiles(paths ...string) {
-	for _, path := range paths {
-		if err := loadDotEnv(path); err != nil {
-			log.Printf("could not load %s: %v", sanitizeLogValue(path), err)
-		}
-	}
-}
-
-func loadDotEnv(path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	defer func() {
-		if err := file.Close(); err != nil {
-			log.Printf("close .env failed: %v", err)
-		}
-	}()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-
-		key = strings.TrimSpace(key)
-		value = strings.Trim(strings.TrimSpace(value), `"'`)
-		if key == "" || os.Getenv(key) != "" {
-			continue
-		}
-
-		if err := os.Setenv(key, value); err != nil {
-			return err
-		}
-	}
-
-	return scanner.Err()
 }
