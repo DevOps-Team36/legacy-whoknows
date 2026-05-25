@@ -44,6 +44,30 @@ func TestSearchPages_MatchesTitle(t *testing.T) {
 	}
 }
 
+func TestSearchPages_MatchesTitleKeywords(t *testing.T) {
+	ctx := context.Background()
+	pool := newTestPool(t)
+	seedPages(t, pool)
+
+	if _, err := pool.Exec(ctx,
+		`INSERT INTO pages (title, url, language, content) VALUES ($1, $2, $3, $4)`,
+		"Java", "/java", "en", "A programming language and software platform.",
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	results, err := SearchPages(ctx, pool, "best framework for java", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected title keyword match, got no results")
+	}
+	if results[0]["url"] != "/java" {
+		t.Fatalf("expected /java as top result, got %#v", results)
+	}
+}
+
 func TestSearchPages_NoMatch(t *testing.T) {
 	ctx := context.Background()
 	pool := newTestPool(t)
