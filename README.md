@@ -14,7 +14,7 @@ WhoKnows is a search engine for web pages. Users can search for topics and get r
 
 ## Architecture
 
-```
+```text
 User browser
     │
     ▼
@@ -41,36 +41,36 @@ An admin monitors search misses in Grafana, then manually triggers a scrape job 
 
 ## Tech stack
 
-| Layer | Technology |
-|---|---|
-| Backend | Go 1.26, `go-chi/chi` router |
-| Database | PostgreSQL 17, `pgx/v5` driver |
-| Migrations | `pressly/goose` (auto-applied on startup) |
-| Session storage | `gorilla/sessions` cookie store |
-| Scraper | Azure Functions (Node.js), Wikipedia OpenSearch API |
-| Job queue | Azure Storage Queue |
-| Metrics | Prometheus (`prometheus/client_golang`) |
-| Log shipping | Grafana Alloy → Loki |
-| Monitoring | Grafana + Prometheus + Loki on a dedicated server (`monitor.huw.dk`) |
-| Reverse proxy | Nginx with Let's Encrypt TLS |
-| Containerisation | Docker + Docker Compose, blue-green deployment |
-| Infrastructure | DigitalOcean (Terraform), Cloudflare DNS |
-| CI/CD | GitHub Actions (build, test, lint, blue-green deploy) |
-| IaC | Terraform + Ansible |
-| API docs | Swagger / swaggo |
+| Layer            | Technology                                                           |
+| ---------------- | -------------------------------------------------------------------- |
+| Backend          | Go 1.26, `go-chi/chi` router                                         |
+| Database         | PostgreSQL 17, `pgx/v5` driver                                       |
+| Migrations       | `pressly/goose` (auto-applied on startup)                            |
+| Session storage  | `gorilla/sessions` cookie store                                      |
+| Scraper          | Azure Functions (Node.js), Wikipedia OpenSearch API                  |
+| Job queue        | Azure Storage Queue                                                  |
+| Metrics          | Prometheus (`prometheus/client_golang`)                              |
+| Log shipping     | Grafana Alloy → Loki                                                 |
+| Monitoring       | Grafana + Prometheus + Loki on a dedicated server (`monitor.huw.dk`) |
+| Reverse proxy    | Nginx with Let's Encrypt TLS                                         |
+| Containerisation | Docker + Docker Compose, blue-green deployment                       |
+| Infrastructure   | DigitalOcean (Terraform), Cloudflare DNS                             |
+| CI/CD            | GitHub Actions (build, test, lint, blue-green deploy)                |
+| IaC              | Terraform + Ansible                                                  |
+| API docs         | Swagger / swaggo                                                     |
 
 ## API endpoints
 
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/search?q=<query>&language=en` or `da` | — | Search indexed pages |
-| `POST` | `/api/register` | — | Create a user account |
-| `POST` | `/api/login` | — | Log in |
-| `GET` | `/api/logout` | — | Log out |
-| `POST` | `/api/pages` | `WHOKNOWS_SCRAPER_API_KEY` | Ingest a scraped page (used by Azure Function) |
-| `POST` | `/api/scrape` | `WHOKNOWS_SCRAPE_TRIGGER_KEY` | Trigger a scrape job (used by admins) |
-| `GET` | `/metrics` | — | Prometheus metrics |
-| `GET` | `/swagger/*` | — | Swagger UI |
+| Method | Path                                        | Auth                          | Description                                    |
+| ------ | ------------------------------------------- | ----------------------------- | ---------------------------------------------- |
+| `GET`  | `/api/search?q=<query>&language=en` or `da` | —                             | Search indexed pages                           |
+| `POST` | `/api/register`                             | —                             | Create a user account                          |
+| `POST` | `/api/login`                                | —                             | Log in                                         |
+| `GET`  | `/api/logout`                               | —                             | Log out                                        |
+| `POST` | `/api/pages`                                | `WHOKNOWS_SCRAPER_API_KEY`    | Ingest a scraped page (used by Azure Function) |
+| `POST` | `/api/scrape`                               | `WHOKNOWS_SCRAPE_TRIGGER_KEY` | Trigger a scrape job (used by admins)          |
+| `GET`  | `/metrics`                                  | —                             | Prometheus metrics                             |
+| `GET`  | `/swagger/*`                                | —                             | Swagger UI                                     |
 
 ### Triggering a scrape (admin)
 
@@ -135,14 +135,14 @@ Requires `server_go/deploy/terraform/terraform.tfvars` — copy from `terraform.
 
 ## Environment variables
 
-| Variable | Used by | Description |
-|---|---|---|
-| `DATABASE_URL` | Go server | PostgreSQL connection string |
-| `WHOKNOWS_ADDR` | Go server | Bind address (default `0.0.0.0`) |
-| `WHOKNOWS_PORT` | Go server | Port (default `8080`) |
-| `WHOKNOWS_SCRAPER_API_KEY` | Azure Function → `/api/pages` | Auth key for the scraper to submit pages |
-| `WHOKNOWS_SCRAPE_TRIGGER_KEY` | Admin → `/api/scrape` | Auth key for admins to trigger scrape jobs |
-| `WHOKNOWS_SEARCH_LOG_PATH` | Go server | Path for the JSON search log (default `searches.log`) |
+| Variable                      | Used by                       | Description                                           |
+| ----------------------------- | ----------------------------- | ----------------------------------------------------- |
+| `DATABASE_URL`                | Go server                     | PostgreSQL connection string                          |
+| `WHOKNOWS_ADDR`               | Go server                     | Bind address (default `0.0.0.0`)                      |
+| `WHOKNOWS_PORT`               | Go server                     | Port (default `8080`)                                 |
+| `WHOKNOWS_SCRAPER_API_KEY`    | Azure Function → `/api/pages` | Auth key for the scraper to submit pages              |
+| `WHOKNOWS_SCRAPE_TRIGGER_KEY` | Admin → `/api/scrape`         | Auth key for admins to trigger scrape jobs            |
+| `WHOKNOWS_SEARCH_LOG_PATH`    | Go server                     | Path for the JSON search log (default `searches.log`) |
 
 See `.env.example` for a template.
 
@@ -150,23 +150,24 @@ See `.env.example` for a template.
 
 GitHub Actions runs on every push and pull request to `dev`:
 
-| Job | What it checks |
-|---|---|
-| Build & Test | `go build` + `go test` against a live PostgreSQL instance |
-| Migration Sanity Check | `goose up` against a fresh database |
-| Go Lint | `golangci-lint` |
-| Gosec | Static security analysis |
-| Govulncheck | Known CVEs in dependencies |
-| Super-Linter | Dockerfile, YAML, JSON, and other non-Go files |
+| Job                    | What it checks                                            |
+| ---------------------- | --------------------------------------------------------- |
+| Build & Test           | `go build` + `go test` against a live PostgreSQL instance |
+| Migration Sanity Check | `goose up` against a fresh database                       |
+| Go Lint                | `golangci-lint`                                           |
+| Gosec                  | Static security analysis                                  |
+| Govulncheck            | Known CVEs in dependencies                                |
+| Super-Linter           | Dockerfile, YAML, JSON, and other non-Go files            |
 
 ## Scraper
 
 The scraper is an **Azure Function** (Node.js) that runs when a message arrives on the Azure Storage Queue.
 
 Flow:
+
 1. Admin calls `POST /api/scrape` with a query and language.
 2. The Go server pushes a job (`{query, language}`) onto the queue.
 3. The Azure Function reads the message, calls the **Wikipedia OpenSearch API** to find matching article titles, fetches each article's extract, and POSTs each page to `POST /api/pages` on the Go server.
 4. The Go server stores the page in PostgreSQL (`ON CONFLICT DO NOTHING`).
 
-The scraper only indexes Wikipedia content. Queries that have no Wikipedia results (e.g. very specific or non-encyclopaedic topics) will not produce new pages.
+The scraper only indices Wikipedia content. Queries that have no Wikipedia results (e.g. very specific or non-encyclopaedic topics) will not produce new pages.
