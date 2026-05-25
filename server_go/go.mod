@@ -7,7 +7,7 @@ toolchain go1.26.3
 require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/gorilla/sessions v1.4.0
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/pressly/goose/v3 v3.22.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/swaggo/http-swagger v1.3.4
@@ -44,7 +44,6 @@ require (
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
-	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect

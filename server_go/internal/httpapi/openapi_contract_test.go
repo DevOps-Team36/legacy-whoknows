@@ -89,3 +89,24 @@ func TestAPIRegisterMissingEmailReturns422HTTPValidationError(t *testing.T) {
 		t.Fatal("expected at least one validation error detail")
 	}
 }
+
+func TestAPIWeatherReturnsStandardResponse(t *testing.T) {
+	s := testServer()
+	r := NewRouter(s)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/weather", nil)
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rec.Code)
+	}
+
+	var body StandardResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("expected valid JSON response, got error: %v", err)
+	}
+	if body.Data == nil {
+		t.Fatal("expected data object in weather response")
+	}
+}
