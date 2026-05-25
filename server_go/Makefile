@@ -1,4 +1,4 @@
-.PHONY: run dev build test lint lint-fix swagger swagger-check clean docker-build docker-up docker-down deploy help
+.PHONY: run dev build test lint lint-fix swagger swagger-check clean docker-build docker-up docker-down deploy spinup spinup-app spinup-monitoring help
 
 BINARY    := whoknows-server
 MAIN      := ./cmd/server
@@ -54,6 +54,15 @@ deploy: ## Deploy to production via Ansible
 
 deploy-check: ## Ansible dry-run (no changes)
 	ansible-playbook deploy/ansible/playbook.yml --check
+
+spinup: ## Spin up begge servere fra scratch (Terraform + DNS + Ansible)
+	bash deploy/spinup.sh all
+
+spinup-app: ## Spin up kun app-server (brug når kun huw.dk er nede)
+	bash deploy/spinup.sh app
+
+spinup-monitoring: ## Spin up kun monitoring-server (brug når monitor.huw.dk er nede)
+	bash deploy/spinup.sh monitoring
 
 # ── Maintenance ─────────────────────────────────────────────
 
