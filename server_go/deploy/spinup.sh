@@ -24,7 +24,7 @@ if [ ! -f terraform.tfvars ]; then
 	exit 1
 fi
 
-terraform init -upgrade
+terraform init
 
 case "$MODE" in
 app)
@@ -67,7 +67,7 @@ sleep 60
 
 # --- Ansible ---
 echo "==> Kører Ansible playbook..."
-cd "$ANSIBLE_DIR/.."
+cd "$ANSIBLE_DIR/../.."
 
 case "$MODE" in
 app)

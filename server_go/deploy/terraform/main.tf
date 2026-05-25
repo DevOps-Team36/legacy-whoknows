@@ -125,7 +125,7 @@ resource "digitalocean_firewall" "monitoring" {
   inbound_rule {
     protocol         = "tcp"
     port_range       = "3100"
-    source_addresses = ["0.0.0.0/0", "::/0"]
+    source_addresses = ["${digitalocean_droplet.whoknows.ipv4_address}/32"]
   }
 
   outbound_rule {
