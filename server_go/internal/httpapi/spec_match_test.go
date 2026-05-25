@@ -12,10 +12,7 @@ import (
 )
 
 // Paths to skip when comparing (not implemented in our app).
-var skipPaths = map[string]bool{
-	"/weather":     true,
-	"/api/weather": true,
-}
+var skipPaths = map[string]bool{}
 
 func projectRoot() string {
 	_, file, _, _ := runtime.Caller(0)

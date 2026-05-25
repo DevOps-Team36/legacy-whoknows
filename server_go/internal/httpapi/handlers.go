@@ -33,6 +33,10 @@ type SearchResponse struct {
 	Data []map[string]any `json:"data"`
 }
 
+type StandardResponse struct {
+	Data map[string]any `json:"data"`
+}
+
 type RequestValidationError struct {
 	StatusCode int     `json:"statusCode"`
 	Message    *string `json:"message"`
@@ -49,9 +53,10 @@ type HTTPValidationError struct {
 }
 
 type User struct {
-	ID       int64
-	Username string
-	Email    string
+	ID                     int64
+	Username               string
+	Email                  string
+	PasswordChangeRequired bool
 }
 
 type ViewData struct {
@@ -60,6 +65,7 @@ type ViewData struct {
 	Error   string
 	Results []map[string]any
 	Query   string
+	Weather map[string]any
 }
 
 // UserFromSession is chi middleware that loads the logged-in user (if any)
@@ -85,9 +91,37 @@ func (s *Server) UserFromSession(next http.Handler) http.Handler {
 			return
 		}
 
-		u := &User{ID: row.ID, Username: row.Username, Email: row.Email}
+		u := &User{
+			ID:                     row.ID,
+			Username:               row.Username,
+			Email:                  row.Email,
+			PasswordChangeRequired: row.PasswordChangeRequired,
+		}
 		ctx := context.WithValue(r.Context(), userContextKey, u)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *Server) RequirePasswordChange(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := currentUser(r)
+		if user == nil || !user.PasswordChangeRequired {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		switch r.URL.Path {
+		case "/change-password", "/api/change-password", "/api/logout":
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if strings.HasPrefix(r.URL.Path, "/static/") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.Redirect(w, r, "/change-password", http.StatusSeeOther)
 	})
 }
 
@@ -300,6 +334,24 @@ func (s *Server) ServeAboutPage(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, "about.html", ViewData{User: currentUser(r), Flashes: s.getFlashes(w, r)})
 }
 
+// ServeWeatherPage godoc
+// @Summary Serve Weather Page
+// @Description Serves the weather forecast page as HTML.
+// @Tags pages
+// @Produce html
+// @Param city query string false "City name"
+// @Success 200 {string} string "HTML page"
+// @Router /weather [get]
+func (s *Server) ServeWeatherPage(w http.ResponseWriter, r *http.Request) {
+	city := strings.TrimSpace(r.URL.Query().Get("city"))
+	renderTemplate(w, "weather.html", ViewData{
+		User:    currentUser(r),
+		Flashes: s.getFlashes(w, r),
+		Query:   city,
+		Weather: s.weatherForecast(r, city),
+	})
+}
+
 // ServeRegisterPage godoc
 // @Summary Serve Register Page
 // @Description Serves the registration page as HTML.
@@ -328,6 +380,20 @@ func (s *Server) ServeLoginPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	renderTemplate(w, "login.html", ViewData{Flashes: s.getFlashes(w, r)})
+}
+
+func (s *Server) ServeChangePasswordPage(w http.ResponseWriter, r *http.Request) {
+	user := currentUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !user.PasswordChangeRequired {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	renderTemplate(w, "change_password.html", ViewData{User: user, Flashes: s.getFlashes(w, r)})
 }
 
 // Search godoc
@@ -366,11 +432,6 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 		log.Printf("search log write failed: %v", err)
 	}
 
-	metrics.ObserveSearch(time.Since(started), len(results))
-	if err := searchlog.LogSearch(q, lang, len(results)); err != nil {
-		log.Printf("search log write failed: %v", err)
-	}
-
 	writeJSON(w, http.StatusOK, SearchResponse{Data: results})
 }
 
@@ -381,7 +442,7 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 // @Tags scrape
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer <api-key>"
+// @Param X-Scrape-Key header string true "API key"
 // @Param body body object true "Query to scrape: {query, language}"
 // @Success 202 {object} map[string]string
 // @Failure 400 {object} map[string]string
@@ -389,8 +450,8 @@ func (s *Server) Search(w http.ResponseWriter, r *http.Request) {
 // @Failure 503 {object} map[string]string
 // @Router /api/scrape [post]
 func (s *Server) TriggerScrape(w http.ResponseWriter, r *http.Request) {
-	expected := []byte("Bearer " + s.ScrapeKey)
-	actual := []byte(r.Header.Get("Authorization"))
+	expected := []byte(s.ScrapeKey)
+	actual := []byte(r.Header.Get("X-Scrape-Key"))
 	if s.ScrapeKey == "" || subtle.ConstantTimeCompare(actual, expected) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
@@ -436,15 +497,15 @@ func (s *Server) TriggerScrape(w http.ResponseWriter, r *http.Request) {
 // @Tags pages
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer <api-key>"
+// @Param X-Scraper-Key header string true "API key"
 // @Param page body object true "Page data"
 // @Success 201 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Router /api/pages [post]
 func (s *Server) AddPage(w http.ResponseWriter, r *http.Request) {
-	expected := []byte("Bearer " + s.ScraperKey)
-	actual := []byte(r.Header.Get("Authorization"))
+	expected := []byte(s.ScraperKey)
+	actual := []byte(r.Header.Get("X-Scraper-Key"))
 	if s.ScraperKey == "" || subtle.ConstantTimeCompare(actual, expected) != 1 {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 		return
@@ -482,6 +543,70 @@ func (s *Server) AddPage(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("indexed page: %s", page.Title)
 	writeJSON(w, http.StatusCreated, map[string]string{"message": "page indexed"})
+}
+
+// Weather godoc
+// @Summary Weather
+// @Description Returns the current weather forecast.
+// @Tags weather
+// @Produce json
+// @Param city query string false "City name"
+// @Success 200 {object} StandardResponse
+// @Router /api/weather [get]
+func (s *Server) Weather(w http.ResponseWriter, r *http.Request) {
+	city := strings.TrimSpace(r.URL.Query().Get("city"))
+	writeJSON(w, http.StatusOK, StandardResponse{Data: s.weatherForecast(r, city)})
+}
+
+func (s *Server) weatherForecast(r *http.Request, city string) map[string]any {
+	if s.WeatherService == nil {
+		return fallbackWeatherForecast(city)
+	}
+
+	forecast, err := s.WeatherService.Forecast(r.Context(), city)
+	if err != nil {
+		log.Printf("weather forecast failed: %v", err)
+		return fallbackWeatherForecast(city)
+	}
+	return forecast
+}
+
+func fallbackWeatherForecast(city string) map[string]any {
+	location := city
+	if location == "" {
+		location = "Copenhagen"
+	}
+	return map[string]any{
+		"location":        location,
+		"summary":         "Forecast temporarily unavailable.",
+		"icon":            "partly_cloudy_day",
+		"source":          "placeholder",
+		"temperature":     12,
+		"temperatureUnit": "celsius",
+		"forecast": []map[string]any{
+			{
+				"day":         "Today",
+				"condition":   "Cloudy",
+				"icon":        "cloud",
+				"temperature": 12,
+				"unit":        "celsius",
+			},
+			{
+				"day":         "Tomorrow",
+				"condition":   "Light rain",
+				"icon":        "rainy_light",
+				"temperature": 10,
+				"unit":        "celsius",
+			},
+			{
+				"day":         "Day 3",
+				"condition":   "Partly sunny",
+				"icon":        "partly_cloudy_day",
+				"temperature": 13,
+				"unit":        "celsius",
+			},
+		},
+	}
 }
 
 // Register godoc
@@ -592,7 +717,62 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	sess.Values["user_id"] = user.ID
 	_ = sess.Save(r, w)
 
+	if user.PasswordChangeRequired {
+		http.Redirect(w, r, "/change-password", http.StatusSeeOther)
+		return
+	}
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	if !requireFormFields(w, r, "current_password", "password", "password2") {
+		return
+	}
+
+	user := currentUser(r)
+	if user == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	row, err := db.GetUserByID(r.Context(), s.DB, user.ID)
+	if err != nil {
+		log.Printf("change password user lookup failed: %v", err)
+		s.flashAndRedirect(w, r, "Internal error, please try again", "/change-password")
+		return
+	}
+
+	currentPassword := r.FormValue("current_password")
+	password := r.FormValue("password")
+	password2 := r.FormValue("password2")
+
+	var formError string
+	switch {
+	case currentPassword == "":
+		formError = "You have to enter your current password"
+	case !auth.VerifyPassword(row.PasswordHash, currentPassword):
+		formError = "Current password is incorrect"
+	case password == "":
+		formError = "You have to enter a new password"
+	case password != password2:
+		formError = "The two passwords do not match"
+	case auth.VerifyPassword(row.PasswordHash, password):
+		formError = "New password must be different from your current password"
+	}
+
+	if formError != "" {
+		s.flashAndRedirect(w, r, formError, "/change-password")
+		return
+	}
+
+	if err := db.UpdateUserPassword(r.Context(), s.DB, user.ID, auth.HashPassword(password)); err != nil {
+		log.Printf("change password update failed: %v", err)
+		s.flashAndRedirect(w, r, "Internal error, please try again", "/change-password")
+		return
+	}
+
+	s.flashAndRedirect(w, r, "Password updated successfully", "/")
 }
 
 // Logout godoc

@@ -1,0 +1,52 @@
+{{ define "body" }}
+<main class="weather-page">
+  <section class="weather-panel">
+    <div class="weather-header">
+      <div>
+        <h1 class="weather-title">Weather forecast</h1>
+        <p class="weather-summary">{{ index .Weather "summary" }}</p>
+      </div>
+      <div class="weather-location">
+        <span class="material-symbols-outlined">location_on</span>
+        <span>{{ index .Weather "location" }}</span>
+      </div>
+    </div>
+
+    <form class="weather-search" action="/weather" method="get">
+      <label class="weather-search-label" for="weather-city">City</label>
+      <div class="weather-search-bar">
+        <span class="material-symbols-outlined">search</span>
+        <input id="weather-city" name="city" type="text" placeholder="Search city..." value="{{ .Query }}">
+        <button class="btn-search" type="submit">Search</button>
+      </div>
+    </form>
+
+    <div class="weather-current">
+      <span class="material-symbols-outlined">{{ index .Weather "icon" }}</span>
+      <div>
+        <span class="weather-current-label">Current outlook</span>
+        <strong>{{ index .Weather "temperature" }}&deg;C</strong>
+      </div>
+    </div>
+
+    <section class="weather-forecast" aria-label="Weather forecast">
+      {{ range index .Weather "forecast" }}
+      <article class="weather-row">
+        <div class="weather-row-main">
+          <span class="material-symbols-outlined">{{ index . "icon" }}</span>
+          <div>
+            <h2>{{ index . "day" }}</h2>
+            <p>{{ index . "condition" }}</p>
+          </div>
+        </div>
+        <strong>{{ index . "temperature" }}&deg;C</strong>
+      </article>
+      {{ end }}
+    </section>
+  </section>
+</main>
+{{ end }}
+
+{{ define "weather.html" }}
+  {{ template "layout" . }}
+{{ end }}

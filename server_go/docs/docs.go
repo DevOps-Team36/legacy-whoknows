@@ -199,6 +199,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/weather": {
+            "get": {
+                "description": "Returns the current weather forecast.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "weather"
+                ],
+                "summary": "Weather",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "City name",
+                        "name": "city",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/httpapi.StandardResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/login": {
             "get": {
                 "description": "Serves the login page as HTML.",
@@ -229,6 +257,34 @@ const docTemplate = `{
                     "pages"
                 ],
                 "summary": "Serve Register Page",
+                "responses": {
+                    "200": {
+                        "description": "HTML page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/weather": {
+            "get": {
+                "description": "Serves the weather forecast page as HTML.",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "pages"
+                ],
+                "summary": "Serve Weather Page",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "City name",
+                        "name": "city",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "HTML page",
@@ -283,6 +339,15 @@ const docTemplate = `{
                         "type": "object",
                         "additionalProperties": {}
                     }
+                }
+            }
+        },
+        "httpapi.StandardResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
                 }
             }
         },

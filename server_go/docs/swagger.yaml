@@ -29,6 +29,12 @@ definitions:
           type: object
         type: array
     type: object
+  httpapi.StandardResponse:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+    type: object
   httpapi.ValidationError:
     properties:
       loc:
@@ -170,6 +176,24 @@ paths:
       summary: Search
       tags:
       - search
+  /api/weather:
+    get:
+      description: Returns the current weather forecast.
+      parameters:
+      - description: City name
+        in: query
+        name: city
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/httpapi.StandardResponse'
+      summary: Weather
+      tags:
+      - weather
   /login:
     get:
       description: Serves the login page as HTML.
@@ -194,6 +218,24 @@ paths:
           schema:
             type: string
       summary: Serve Register Page
+      tags:
+      - pages
+  /weather:
+    get:
+      description: Serves the weather forecast page as HTML.
+      parameters:
+      - description: City name
+        in: query
+        name: city
+        type: string
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML page
+          schema:
+            type: string
+      summary: Serve Weather Page
       tags:
       - pages
 swagger: "2.0"
