@@ -21,9 +21,10 @@ func SearchPages(ctx context.Context, conn *pgxpool.Pool, q string, language *st
 
 	out := make([]map[string]any, 0)
 	seen := make(map[string]struct{})
+	terms := extractSearchTerms(q)
 
-	// First keep the old behavior: find pages where the title contains the full query.
-	titleResults, err := searchPagesByTitle(ctx, conn, q, lang, 30)
+	// First find pages where the title contains one of the meaningful query terms.
+	titleResults, err := searchPagesByTitle(ctx, conn, q, terms, lang, 30)
 	if err != nil {
 		return nil, err
 	}
@@ -34,8 +35,7 @@ func SearchPages(ctx context.Context, conn *pgxpool.Pool, q string, language *st
 		return out, nil
 	}
 
-	// Then reduce the query to keywords in search_cleaning.go and search for those in content.
-	terms := extractSearchTerms(q)
+	// Then search for those same keywords in content.
 	if len(terms) == 0 {
 		return out, nil
 	}
@@ -49,13 +49,38 @@ func SearchPages(ctx context.Context, conn *pgxpool.Pool, q string, language *st
 	return out, nil
 }
 
-func searchPagesByTitle(ctx context.Context, conn *pgxpool.Pool, q string, lang string, limit int) ([]map[string]any, error) {
-	rows, err := conn.Query(ctx, `
+func searchPagesByTitle(ctx context.Context, conn *pgxpool.Pool, q string, terms []string, lang string, limit int) ([]map[string]any, error) {
+	if len(terms) == 0 {
+		rows, err := conn.Query(ctx, `
+			SELECT title, url, language, last_updated, content
+			FROM pages
+			WHERE language = $1 AND title ILIKE $2
+			LIMIT $3
+		`, lang, "%"+q+"%", limit)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		return scanSearchRows(rows)
+	}
+
+	args := []any{lang}
+	conditions := make([]string, 0, len(terms))
+	for _, term := range terms {
+		args = append(args, "%"+term+"%")
+		conditions = append(conditions, fmt.Sprintf("title ILIKE $%d", len(args)))
+	}
+
+	args = append(args, limit)
+	query := fmt.Sprintf(`
 		SELECT title, url, language, last_updated, content
 		FROM pages
-		WHERE language = $1 AND title ILIKE $2
-		LIMIT $3
-	`, lang, "%"+q+"%", limit)
+		WHERE language = $1 AND (%s)
+		LIMIT $%d
+	`, strings.Join(conditions, " OR "), len(args))
+
+	rows, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
