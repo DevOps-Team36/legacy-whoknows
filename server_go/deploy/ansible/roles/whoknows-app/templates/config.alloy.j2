@@ -16,5 +16,6 @@ loki.source.file "whoknows_search_logs" {
 loki.write "monitoring" {
   endpoint {
     url = "http://{{ monitoring_url }}/loki/api/v1/push"
+
   }
 }
