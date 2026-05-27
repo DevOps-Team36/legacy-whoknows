@@ -28,6 +28,13 @@ jobs:
             server_go/deploy/docker-compose.server.yml \
             "$SSH_USER@$SSH_HOST":/opt/whoknows/docker-compose.yml
 
+      - name: Copy Alloy config to server
+        run: |
+          ssh -i ~/.ssh/ssh_key "$SSH_USER@$SSH_HOST" "mkdir -p /opt/whoknows/alloy"
+          scp -i ~/.ssh/ssh_key \
+            server_go/deploy/config.alloy \
+            "$SSH_USER@$SSH_HOST":/opt/whoknows/alloy/config.alloy
+
       - name: Blue/green deploy
         run: |
           ssh -i ~/.ssh/ssh_key "$SSH_USER@$SSH_HOST" << 'DEPLOY'
