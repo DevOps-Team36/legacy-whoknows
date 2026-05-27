@@ -2,7 +2,7 @@
 # Deploy WhoKnows med Docker Compose.
 # Kør fra server_go: ansible-playbook deploy/ansible/playbook.yml
 - name: Deploy WhoKnows (Docker Compose)
-  hosts: all
+  hosts: production
   become: true
   roles:
     - role: docker
@@ -24,3 +24,12 @@
     - name: Vis deployment-status
       debug:
         msg: "WhoKnows kører på http://{{ ansible_host }}:{{ app_port }}"
+
+- name: Deploy Monitoring Stack
+  hosts: monitoring
+  become: true
+  roles:
+    - role: docker
+      tags: docker,monitoring
+    - role: monitoring
+      tags: monitoring
