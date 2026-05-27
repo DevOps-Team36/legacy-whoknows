@@ -12,6 +12,10 @@ all:
     certbot_email: "hannibal@ussing.com"
     ansible_user: deploy
     monitoring_url: monitor.huw.dk
+    ssh_authorized_keys:
+      - "ssh-ed25519 CHANGEME member1-navn"
+      - "ssh-ed25519 CHANGEME member2-navn"
+      - "ssh-ed25519 CHANGEME member3-navn"
 
   children:
     production:

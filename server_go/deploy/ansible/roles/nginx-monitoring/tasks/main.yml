@@ -1,0 +1,32 @@
+---
+- name: Installer Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: true
+
+- name: Fjern default Nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Placer Nginx config for Grafana
+  template:
+    src: monitoring.conf.j2
+    dest: /etc/nginx/sites-available/monitoring
+    mode: "0644"
+
+- name: Aktiver Nginx site
+  file:
+    src: /etc/nginx/sites-available/monitoring
+    dest: /etc/nginx/sites-enabled/monitoring
+    state: link
+
+- name: Test Nginx config
+  command: nginx -t
+  changed_when: false
+
+- name: Genindlæs Nginx
+  systemd:
+    name: nginx
+    state: reloaded
