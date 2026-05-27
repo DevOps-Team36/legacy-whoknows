@@ -1,0 +1,20 @@
+local.file_match "whoknows_search_logs" {
+  path_targets = [
+    {
+      __path__ = "/var/log/whoknows/searches.log",
+      job      = "whoknows-search-logs",
+      app      = "whoknows",
+    },
+  ]
+}
+
+loki.source.file "whoknows_search_logs" {
+  targets    = local.file_match.whoknows_search_logs.targets
+  forward_to = [loki.write.monitoring.receiver]
+}
+
+loki.write "monitoring" {
+  endpoint {
+    url = "http://{{ monitoring_url }}/loki/api/v1/push"
+  }
+}

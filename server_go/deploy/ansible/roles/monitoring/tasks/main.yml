@@ -1,0 +1,29 @@
+---
+- name: Opret monitoring-mappe
+  file:
+    path: "{{ monitoring_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Placer docker-compose.yml
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir }}/docker-compose.yml"
+    mode: "0644"
+
+- name: Placer Prometheus config
+  template:
+    src: prometheus.yml.j2
+    dest: "{{ monitoring_dir }}/prometheus.yml"
+    mode: "0644"
+
+- name: Placer Loki config
+  template:
+    src: loki-config.yml.j2
+    dest: "{{ monitoring_dir }}/loki-config.yml"
+    mode: "0644"
+
+- name: Start monitoring stack
+  shell: "cd {{ monitoring_dir }} && docker compose up -d"
+  args:
+    executable: /bin/bash

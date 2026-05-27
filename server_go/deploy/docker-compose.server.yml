@@ -59,3 +59,14 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    volumes:
+      - /opt/whoknows/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /opt/whoknows/logs:/var/log/whoknows:ro
+    command: run /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"

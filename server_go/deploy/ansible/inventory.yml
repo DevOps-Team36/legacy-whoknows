@@ -11,9 +11,20 @@ all:
     server_ip: "104.248.138.83"
     certbot_email: "hannibal@ussing.com"
     ansible_user: deploy
+    monitoring_url: monitor.huw.dk
 
   children:
     production:
       hosts:
         whoknows-vm:
           ansible_host: 104.248.138.83
+
+    monitoring:
+      vars:
+        ansible_user: deploy
+        monitoring_dir: /opt/monitoring
+        app_domain: huw.dk
+        grafana_admin_password: "changeme"
+      hosts:
+        monitoring-vm:
+          ansible_host: 147.182.184.189
