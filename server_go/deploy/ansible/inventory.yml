@@ -12,6 +12,19 @@ all:
     certbot_email: "hannibal@ussing.com"
     ansible_user: deploy
     monitoring_url: monitor.huw.dk
+    ssh_authorized_keys:
+      # monneDev
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAYhfzEUJ1gnSnj/6mwvUKMXH0ePgm2W7X6TjrMMfqUl"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC2m+5RJqzvb2G8CRo2/kF0gNOAMf2yU2O3ZjGMJ5xCEZc7CjDyJtqk4TlRS03bWeth5lchX0+y9LegeoO9efAqHWKDtXHoMVbPiy7kb9RVq5djtBQcCXTRlJHBtiTsTmavDHvkPhH+95NKBF5lcMMrTqHpnHiMLmEq9k7Uc70VeS5wgpEcWwOFGh/BbXhXG45mn23mpeQdf8POMD+mp+xR8OL06YP9JdSnkljqXkSXsVbD+Vm1LueZ06xUp5tMQjqTNFF11XUiS+SGbH8Jq6rNJMGv441CV2K0hYO744vckMPSmlbuihh76lEbhvlN361lZKkF81qbSFjCdPo1XkPzvzF44ENQFpm9Hn0Ol8oUTOKqF12minq6epQF8zvj/ox7Q9HvFllnJzYnnDCDVKeTsj7m6pJ4HZMZYsaWlPne2/k59PkH54dkRdXzXvbjYG0HaDWWRO3KiCxSRIIfY7xjemF/3c0kxhldUKW70ZNKH44FcXIpcWbj1tqP+1cM7KuzV/odsm48C3o4E2M+aM0/bt3d9YqCjYDyykDyShxSLgNKjtV0COPlMAYE8wUwXZzivjXNyXhbKjQ+uFPSAPCVt2x9tFvD2X0g6EKs6gMLb35B78AV5hSSNgZ8B6M8oHehRTwFIM9lODuyv7nVSHRgvaGoPSfmVxxNCD5RqaKBqw=="
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIItlTmQ0ljGETaYq3ZHw6TigQ6z0EJIbepx5Emfp8nW"
+      # viictator
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMrYGabKzfy9IhlgOp5vsLcI5eb4Pr2U+GdWHD3vuPpl"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOQ0gyfsI4EjOEGgUPG6S4BfFlIao9zKE1dCz5igG7xt"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP5JJ8zNRZmxGARwFO83Ip+EXjNr50MP+noe5OJM9hR+"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMA4ijlc340a/jRvE1tZ62CNDhCIeYiDDg6x5dBoYTUS"
+      # Huw02
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGTpsEYzhQ1t1I0KPrj5v0vEXIMWlodc/8+6PivMphko"
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPCBEd6azi+aQ/2ww/ZXG6U84Y6RFWci4fPIkQUedWjj"
 
   children:
     production:
