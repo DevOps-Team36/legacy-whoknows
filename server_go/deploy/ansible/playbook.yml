@@ -5,6 +5,10 @@
   hosts: production
   become: true
   roles:
+    - role: ssh-keys
+      tags: ssh-keys
+    - role: fail2ban
+      tags: fail2ban
     - role: docker
       tags: docker
     - role: whoknows-app
@@ -29,7 +33,13 @@
   hosts: monitoring
   become: true
   roles:
+    - role: ssh-keys
+      tags: ssh-keys
+    - role: fail2ban
+      tags: fail2ban
     - role: docker
       tags: docker,monitoring
     - role: monitoring
       tags: monitoring
+    - role: nginx-monitoring
+      tags: nginx-monitoring

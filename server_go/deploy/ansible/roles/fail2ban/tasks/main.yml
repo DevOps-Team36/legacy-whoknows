@@ -1,0 +1,12 @@
+---
+- name: Installer fail2ban
+  apt:
+    name: fail2ban
+    state: present
+    update_cache: true
+
+- name: Start og aktiver fail2ban
+  systemd:
+    name: fail2ban
+    state: started
+    enabled: true

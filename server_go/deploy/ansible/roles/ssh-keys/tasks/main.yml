@@ -1,0 +1,7 @@
+---
+- name: Tilføj gruppemedlemmers SSH-nøgler til deploy-bruger
+  authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ ssh_authorized_keys }}"
