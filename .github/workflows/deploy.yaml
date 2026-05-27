@@ -45,6 +45,7 @@ jobs:
 
             docker compose pull "whoknows-$NEW"
             docker compose up -d "whoknows-$NEW"
+            docker compose up -d alloy
 
             HEALTHY=false
             for i in $(seq 1 30); do
