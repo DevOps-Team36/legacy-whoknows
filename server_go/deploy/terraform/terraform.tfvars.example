@@ -1,0 +1,16 @@
+# Kopiér til terraform.tfvars og udfyld værdier.
+# terraform.tfvars er gitignored — commit den aldrig.
+
+# DigitalOcean
+do_token                = "dop_v1_..."
+ssh_key_name            = "min-noegle"   # navn som det fremgår af: doctl compute ssh-key list
+region                  = "fra1"
+droplet_size            = "s-1vcpu-2gb"
+monitoring_droplet_size = "s-1vcpu-1gb"
+domain                  = "huw.dk"
+
+# Cloudflare DNS
+# API token: Cloudflare Dashboard → My Profile → API Tokens → Edit zone DNS
+# Zone ID:   Cloudflare Dashboard → huw.dk → Overview → Zone ID (højre side)
+cf_api_token = "..."
+cf_zone_id   = "..."
