@@ -121,19 +121,6 @@ resource "digitalocean_firewall" "monitoring" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  # Loki — modtager logs fra Alloy på app-serveren
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "3100"
-    source_addresses = ["${digitalocean_droplet.whoknows.ipv4_address}/32"]
-  }
-
-  # Prometheus UI
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "9090"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
 
   outbound_rule {
     protocol              = "tcp"
