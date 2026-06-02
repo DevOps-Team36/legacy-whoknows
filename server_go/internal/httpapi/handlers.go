@@ -789,3 +789,37 @@ func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
+
+const sloThreshold = 25.0
+
+type StatusData struct {
+	ViewData
+	Stats          searchlog.Stats
+	SLOMet         bool
+	ScrapedQueries []string
+}
+
+func (s *Server) ServeStatusPage(w http.ResponseWriter, r *http.Request) {
+	stats, err := searchlog.ReadStats()
+	if err != nil {
+		log.Printf("status page: read stats failed: %v", err)
+	}
+
+	data := StatusData{
+		ViewData: ViewData{User: currentUser(r)},
+		Stats:    stats,
+		SLOMet:   stats.Total == 0 || stats.HitRate >= sloThreshold,
+	}
+
+	if !data.SLOMet && s.Queue != nil {
+		for _, q := range stats.TopMissed {
+			if err := s.Queue.Send(map[string]string{"query": q, "language": "en"}); err != nil {
+				log.Printf("status page: failed to queue %q: %v", q, err)
+				continue
+			}
+			data.ScrapedQueries = append(data.ScrapedQueries, q)
+		}
+	}
+
+	renderTemplate(w, "status.html", data)
+}
