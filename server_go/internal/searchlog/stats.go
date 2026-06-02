@@ -22,7 +22,7 @@ func ReadStats() (Stats, error) {
 		path = defaultLogPath
 	}
 
-	f, err := os.Open(path) // #nosec G304 -- path comes from deployment config
+	f, err := os.Open(path) // #nosec G304,G703 -- path comes from deployment config
 	if err != nil {
 		if os.IsNotExist(err) {
 			return Stats{}, nil
