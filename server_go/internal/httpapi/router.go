@@ -45,6 +45,7 @@ func NewRouter(s *Server) http.Handler {
 	r.Get("/", s.ServeRootPage)
 	r.Get("/about", s.ServeAboutPage)
 	r.Get("/weather", s.ServeWeatherPage)
+	r.Get("/status", s.ServeStatusPage)
 	r.Get("/register", s.ServeRegisterPage)
 	r.Get("/login", s.ServeLoginPage)
 	r.Get("/change-password", s.ServeChangePasswordPage)
