@@ -5,7 +5,7 @@ go 1.25.7
 toolchain go1.26.3
 
 require (
-	github.com/go-chi/chi/v5 v5.3.0
+	github.com/go-chi/chi/v5 v5.3.1
 	github.com/gorilla/sessions v1.4.0
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/pressly/goose/v3 v3.27.1
